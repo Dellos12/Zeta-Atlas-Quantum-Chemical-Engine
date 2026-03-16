@@ -1,0 +1,26 @@
+
+syntax = "proto3";
+
+package telemetria;
+
+// Servico de Sintonizacao de Fase entre Linguagem e Materia
+service OraculoService {
+  // RPC: Recebe o Tensor da Linguagem (Seno) e devolve o Tensor da Materia (Cosseno)
+  rpc InterseccaoGeometrica (TensorSeno) returns (TensorCosseno) {}
+}
+
+// A ONDA (Seno da Linguagem) - Vetor de 384 dimensoes
+message TensorSeno {
+  repeated float vetor = 1;      // O angulo da intencao semantica
+  string meta_gramatica = 2;     // Instrucao de curvatura (ex: deste, orto)
+}
+
+// A MATERIA (Cosseno da Materia) - Resposta do Hiperplano
+message TensorCosseno {
+  string molecule_id = 1;        // Ancora no Atlas Gold
+  repeated float vetor_materia = 2; // O estado vibracional da molecula
+  float zeta = 3;                // Desvio da Geodesica no espaco Tanh
+  float angulo_interseccao = 4;  // Produto escalar (Interseccao X)
+  float ricci_curvatura = 5;     // Metrica nao-euclidiana do ponto
+  string evocacao = 6;           // Nomenclatura (ORTO, META, PARA)
+}

@@ -1,0 +1,23 @@
+
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/home/devildev/openFrameworks/libs/openFrameworks/**",
+                "/home/devildev/openFrameworks/addons/ofxOsc/src",
+                "/home/devildev/openFrameworks/addons/ofxGui/src"
+            ],
+            "browse": {
+                "path": [
+                    "/home/devildev/openFrameworks/addons"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "compilerPath": "/usr/bin/g++",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}

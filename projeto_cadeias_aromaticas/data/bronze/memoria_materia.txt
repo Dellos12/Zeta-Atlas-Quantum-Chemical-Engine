@@ -1,0 +1,7 @@
+
+A estabilidade das cadeias aromáticas reside na deslocalização perfeita dos elétrons pi em um anel plano.
+O benzeno é o cerne estável, onde a curvatura de Ricci é mínima e a ressonância é máxima.
+Na fusão de anéis, como no naftaleno, ocorre uma transição lógica na geometria do hiperplano.
+O antraceno apresenta uma progressão linear que desafia a simetria, movendo o ponto de repouso Zeta.
+A assimetria do fenantreno gera uma ruptura de gradiente, onde a tensão térmica supera a estabilidade.
+A nomenclatura orto, meta e para define a angulação do vetor de interferência no campo quântico.
