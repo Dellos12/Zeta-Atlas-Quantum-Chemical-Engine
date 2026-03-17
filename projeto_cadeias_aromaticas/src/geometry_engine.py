@@ -1,36 +1,49 @@
-# src/geometry_engine.py
 import pandas as pd
 import os
+import json
+import sys
+
+def send_telemetry(step, progress, message, data=None):
+    payload = {"step": step, "progress": progress, "message": message, "data": data or {}}
+    print(f"[TELEMETRY] {json.dumps(payload)}")
+    sys.stdout.flush()
 
 def run():
-    print("📐 [Passo 3] Calculando Curvatura de Ricci (Espaço Não-Euclidiano)...")
+    send_telemetry("Passo 3", 10, "📐 [Geometry Engine] Analisando Curvatura de Campo...")
     
-    # Carrega a carga quântica do Passo 2
+    # 1. Carrega os dados processados pelo Periodic Expert e Chemo Expert
     path_silver_chem = 'data/silver/quantum/chem_data.parquet'
     if not os.path.exists(path_silver_chem):
-        print("❌ Erro: Execute o Passo 2 primeiro.")
+        send_telemetry("Erro", 0, "❌ Falha: Dados quânticos (Passo 2) ausentes.")
         return
         
     df = pd.read_parquet(path_silver_chem)
     
-    # Mapeamento da Curvatura (Deformação da Geodésica)
-    # Quanto mais anéis e mais assimetria, maior a curvatura
-    curvaturas = {
-        'AROM_001': 0.15, # Benzeno (Quase plano)
-        'AROM_002': 0.28, # Naftaleno
-        'AROM_003': 0.42, # Antraceno (Progressão Linear)
-        'AROM_004': 0.65  # Fenantreno (Assimetria/Tensão)
-    }
+    # 2. LÓGICA DE REATIVIDADE GEOMÉTRICA (A Blindagem)
+    # Em vez de dicionário fixo, usamos a hibridização vinda do Passo 0
+    def calcular_curvatura(row):
+        hibridizacao = row.get('hibridizacao', 'sp2')
+        
+        if hibridizacao == 'sp2':
+            # Geometria Plana (Benzeno/Aromáticos) -> Ricci baixo
+            return 0.15 
+        elif hibridizacao == 'sp3':
+            # Geometria Tetraédrica (Ciclohexano/Saturados) -> Ricci alto (não-euclidiano)
+            return 0.85
+        else:
+            return 0.50 # Estado de transição ou erro
+
+    # 3. Aplica a Lei Geométrica no Hiperplano
+    df['curvatura_ricci'] = df.apply(calcular_curvatura, axis=1)
     
-    df['curvatura_ricci'] = df['molecule_id'].map(curvaturas)
-    
-    # Salvamos na pasta de geometria (Silver)
+    # 4. Consolidação na Camada Silver
     os.makedirs('data/silver/geometry', exist_ok=True)
     df.to_parquet('data/silver/geometry/geo_data.parquet', index=False)
-    print(f"✅ Curvatura de Ricci mapeada e salva em data/silver/geometry/geo_data.parquet")
+    
+    send_telemetry("Passo 3", 100, "✅ Curvatura de Ricci mapeada conforme hibridização.", {
+        "media_ricci": df['curvatura_ricci'].mean()
+    })
 
 if __name__ == "__main__":
     run()
-
-
 
