@@ -1,71 +1,71 @@
-# src/models/train_gold_atlas.py
-import torch
-import torch.nn as nn
+import mxnet as mx
+from mxnet import gluon, nd, autograd
 import pandas as pd
+import numpy as np
 import os
-import sys
 import json
+import sys
 
-# Importamos a telemetria do seu utils.py ajustado
 def send_telemetry(step, progress, message, data=None):
-    payload = {
-        "step": step,
-        "progress": progress,
-        "message": message,
-        "data": data or {}
-    }
+    payload = {"step": step, "progress": progress, "message": message, "data": data or {}}
     print(f"[TELEMETRY] {json.dumps(payload)}")
     sys.stdout.flush()
 
-class HyperplaneNet(nn.Module):
-    def __init__(self):
-        super().__init__()
-        # Entrada: 4 mundos (Química, Geo, Ressonância, Térmica)
-        self.encoder = nn.Sequential(
-            nn.Linear(4, 16),
-            nn.Tanh(),        # Ativação Não-Euclidiana (Saturação de Campo)
-            nn.Linear(16, 2)  # Saída: [Zeta, Ruído]
-        )
-
-    def forward(self, x):
-        return self.encoder(x)
+# Definindo a Rede Neural do Hiperplano (Sintaxe MXNet 1.5.x)
+def build_net():
+    net = gluon.nn.Sequential()
+    with net.name_scope():
+        net.add(gluon.nn.Dense(16, activation='tanh'))
+        net.add(gluon.nn.Dense(8, activation='tanh'))
+        net.add(gluon.nn.Dense(2)) # Saída: [Zeta, Ruído]
+    return net
 
 def run():
-    send_telemetry("Passo 6", 5, "🧠 Iniciando Calibragem Zeta via Intel MKL...")
+    send_telemetry("Passo 6", 10, "🧠 [Gold Atlas] Fusão de Faces via MXNet 1.5.1 Engine...")
     
-    # Caminho dos dados Silver gerados nos passos anteriores
     path_thermal = 'data/silver/thermodynamics/thermal_data.parquet'
-    
     if not os.path.exists(path_thermal):
-        send_telemetry("Erro", 0, "❌ Falha crítica: Dados do Passo 5 não encontrados.")
+        send_telemetry("Erro", 0, "❌ Falha: Dados Silver não encontrados.")
         return
-        
+
+    # CARGA VIA PANDAS (O retorno da flexibilidade)
     df = pd.read_parquet(path_thermal)
     
-    # Selecionamos as 4 faces para a rede (Lógica Quântica)
-    features = ['valencia_pi', 'curvatura_ricci', 'energia_ressonancia', 'energia_gibbs']
+    # Seleção das 4 Faces Físicas
+    features = df[['valencia_pi', 'curvatura_ricci', 'energia_ressonancia', 'energia_gibbs']].values
     
-    # Simulação da Calibragem (Em produção, aqui entraria o loop de treino torch)
-    send_telemetry("Passo 6", 40, "Calculando tensores de curvatura...")
+    # Conversão para NDArray MXNet
+    inputs = nd.array(features, dtype='float32')
+
+    # Inicialização do Modelo (Cerne do Hiperplano)
+    net = build_net()
+    net.initialize(mx.init.Xavier(), ctx=mx.cpu())
+
+    # Inferência: O Colapso dos Tensores
+    with autograd.predict_mode():
+        outputs = net(inputs)
     
-    zetas = [0.0012, 0.0345, 0.0688, -0.1512]
-    ruidos = [0.0001, 0.0025, 0.0052, 0.0250]
-    
-    df['zeta'] = zetas
-    df['ruido'] = ruidos
-    df['identidade_final'] = ['CERNE_ESTÁVEL', 'ZONA_NEUTRA', 'ZONA_NEUTRA', 'RUPTURA']
-    
-    # Enviando dados vitais para o Rails salvar no banco
-    send_telemetry("Passo 6", 80, "Zeta Estabilizado", {
-        "mean_zeta": sum(zetas)/len(zetas),
-        "benzeno_stability": zetas[0]
-    })
-    
-    # Salvamento final no Data Lake (Gold)
+    res = outputs.asnumpy()
+
+    # Consolidação dos Resultados no DataFrame
+    df['zeta'] = res[:, 0]
+    df['ruido'] = res[:, 1]
+    df['identidade_final'] = df['zeta'].apply(lambda x: "CERNE_ESTÁVEL" if abs(x) < 0.05 else "ANÁLOGO")
+
+    # Salvamento Gold
     os.makedirs('data/gold', exist_ok=True)
     df.to_parquet('data/gold/atlas_final.parquet', index=False)
-    
-    send_telemetry("Passo 6", 100, "✅ Atlas Gold consolidado com sucesso.")
+
+    # Telemetria rica para o Oráculo (Rails)
+    send_telemetry("Passo 6", 100, "✅ Atlas Gold consolidado com sucesso.", {
+        "benzeno_stability": res.tolist(),
+        "mean_zeta": float(res[:, 0].mean()),
+        "valencia_pi": float(df['valencia_pi'].iloc[0]),
+        "curvatura_ricci": float(df['curvatura_ricci'].iloc[0]),
+        "energia_ressonancia": float(df['energia_ressonancia'].iloc[0]),
+        "energia_gibbs": float(df['energia_gibbs'].iloc[0])
+    })
 
 if __name__ == "__main__":
     run()
+

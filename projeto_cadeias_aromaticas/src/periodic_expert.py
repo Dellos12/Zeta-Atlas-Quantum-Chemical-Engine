@@ -1,4 +1,5 @@
-import pandas as pd
+
+import polars as pl
 import os
 import json
 import sys
@@ -10,51 +11,71 @@ def send_telemetry(step, progress, message, data=None):
     sys.stdout.flush()
 
 def parse_formula(formula):
-    """Extrai contagem de átomos: C6H6 -> {'C': 6, 'H': 6}"""
+    """Extrai a contagem de átomos da string (Ex: C5H5N -> {'C': 5, 'H': 5, 'N': 1})"""
     matches = re.findall(r'([A-Z][a-z]*)(\d*)', formula)
     return {el: (int(num) if num else 1) for el, num in matches}
 
 def run():
-    send_telemetry("Passo 0", 10, "⚛️ [Periodic Expert] Sincronizando Leis do Rails...")
+    send_telemetry("Passo 0", 10, "⚛️ [Periodic Expert] Calculando Eletronegatividade e Heterociclo...")
     
-    # 1. Captura o Contrato (Blindagem vinda do Rails)
+    # 1. Captura o Contrato Blindado do Rails
     targets_raw = os.environ.get("ZETA_TARGETS", "{}")
     targets = json.loads(targets_raw)
-    
     formula = targets.get("formula", "C6H6")
-    atomic_rules = targets.get("atomic_rules", {}) # Tabela Periódica do Rails
+    rules = targets.get("atomic_rules", {})
     
-    # 2. Cálculo de Massa e Valência Baseado na Lei do Rails
+    # 2. Análise Estequiométrica
     atom_counts = parse_formula(formula)
-    massa_total = 0
-    valencia_total = 0
+    n_c = atom_counts.get('C', 6)
+    n_h = atom_counts.get('H', 6)
     
+    # 3. CÁLCULO DE POLARIDADE (A Nova Face do Hiperplano)
+    massa_total = 0
+    en_acumulada = 0
+    total_atomos = 0
+    is_hetero = False
+
     for el, count in atom_counts.items():
-        if el in atomic_rules:
-            massa_total += atomic_rules[el]['mass'] * count
-            valencia_total += atomic_rules[el]['valence_electrons'] * count
+        if el in rules:
+            massa_total += rules[el]['mass'] * count
+            en_acumulada += rules[el]['electronegativity'] * count
+            total_atomos += count
+            # Se houver algo além de C e H, é um fármaco potencial (Heterociclo)
+            if el not in ['C', 'H']:
+                is_hetero = True
         else:
-            send_telemetry("Alerta", 0, f"⚠️ Elemento {el} não blindado na tabela!")
+            send_telemetry("Alerta", 0, f"⚠️ Elemento {el} fora da Tabela Periódica!")
 
-    # 3. Definição da Hibridização (Regra de Decisão do Hiperplano)
-    # Se a proporção C/H permitir anel (como C6H6), blindamos como sp2
-    hibridizacao = "sp2" if atom_counts.get('C', 0) == atom_counts.get('H', 0) else "sp3"
+    en_media = round(en_acumulada / total_atomos, 3) if total_atomos > 0 else 2.55
 
+    # 4. LEI DE HIBRIDIZAÇÃO E POSICIONAMENTO DE ID
+    hibridizacao = "sp2" if n_h <= n_c else "sp3"
+    
+    # Sufixo de ID: HET (Fármaco), SP2 (Aromático), SP3 (Saturado)
+    if is_hetero:
+        suffix = "HET"
+    else:
+        suffix = hibridizacao.upper()
+    
+    molecule_id = f"GEN_{formula}_{suffix}"
+
+    # 5. CONSOLIDAÇÃO DO GENOMA (Bronze)
     config = {
-        'molecule_id': f"GEN_{formula}",
+        'molecule_id': molecule_id,
         'formula': formula,
+        'n_carbonos': n_c,
         'massa_calculada': round(massa_total, 3),
-        'valencia_disponivel': valencia_total,
+        'eletronegatividade_media': en_media,
         'hibridizacao': hibridizacao,
+        'is_hetero': 1 if is_hetero else 0,
         'target_gibbs': targets.get("target_gibbs", 10.0)
     }
 
-    # 4. Consolidação da Blindagem (Bronze)
     os.makedirs('data/bronze', exist_ok=True)
-    pd.DataFrame([config]).to_parquet('data/bronze/raw_atlas.parquet', index=False)
+    # Salvamos via Polars-LTS para manter a velocidade industrial
+    pl.DataFrame([config]).write_parquet('data/bronze/raw_atlas.parquet')
     
-    send_telemetry("Passo 0", 100, f"✅ Hiperplano blindado para {formula}.", config)
+    send_telemetry("Passo 0", 100, f"✅ Hiperplano parametrizado para {formula}.", config)
 
 if __name__ == "__main__":
     run()
-
